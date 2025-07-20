@@ -1,10 +1,9 @@
-from typing import Callable, Any
-import aggdraw
-from PIL import Image, ImageDraw, ImageFont
+from typing import Callable
+from PIL import Image, ImageDraw,ImageFont
 from math import ceil
 import torch
 import torch.nn as nn
-import warnings
+
 
 from .utils import *
 from .layer_utils import *
@@ -23,7 +22,7 @@ def layered_view(model: nn.Module,
                  index_ignore: list = None,
                  color_map: dict = None,
                  one_dim_orientation: str = 'z',
-                 index_2D: list = [],
+                 index_2d=None,
                  background_fill: Any = 'white',
                  draw_volume: bool = True,
                  draw_reversed: bool = False,
@@ -56,7 +55,7 @@ def layered_view(model: nn.Module,
         index_ignore (list): List of layer indices to ignore in visualization.
         color_map (dict): Custom color mapping for layer types.
         one_dim_orientation (str): Orientation for one-dimensional layers ('x', 'y', 'z').
-        index_2D (list): List of layer indices that should be treated as 2D layers.
+        index_2d (list): List of layer indices that should be treated as 2D layers.
         background_fill (Any): Background color for the image.
         draw_volume (bool): Whether to draw volume for 3D layers.
         draw_reversed (bool): Whether to draw boxes in reverse order.
@@ -78,9 +77,13 @@ def layered_view(model: nn.Module,
     """
 
     # Collect output shapes via forward hooks
+    if index_2d is None:
+        index_2d = []
+
+    hh,counter=0,0
     shapes = []
 
-    def hook(module, inp, out):
+    def hook(_, __, out):
         shapes.append(out.shape)
 
     hooks = []
@@ -91,9 +94,8 @@ def layered_view(model: nn.Module,
     # Run dummy forward pass to activate hooks and collect shapes
     try:
         # Create a dummy input tensor with batch size 1 matching model input
-        first_layer = next(model.modules())
+        next(model.modules())
         if hasattr(model, 'forward'):
-            input_shape = None
             for m in model.modules():
                 if hasattr(m, 'in_features'):
                     input_shape = (1, m.in_features)
@@ -146,10 +148,6 @@ def layered_view(model: nn.Module,
         elif layer_type not in layer_types:
             layer_types.append(layer_type)
 
-        x = min_xy
-        y = min_xy
-        z = min_z
-
         x, y, z = calculate_layer_dimensions(
             shape, scale_z, scale_xy,
             max_z, max_xy, min_z, min_xy,
@@ -169,7 +167,7 @@ def layered_view(model: nn.Module,
 
         box = Box()
         box.de = 0
-        if draw_volume and idx not in index_2D:
+        if draw_volume and idx not in index_2d:
             box.de = x / 3
         if x_off == -1:
             x_off = box.de / 2
@@ -194,8 +192,6 @@ def layered_view(model: nn.Module,
 
     img_width = max_right + x_off + padding
     img_height = max(img_height, hh)
-    img = Image.new('RGBA', (int(ceil(img_width)),
-                    int(ceil(img_height))), background_fill)
 
     is_any_text_above = False
     is_any_text_below = False

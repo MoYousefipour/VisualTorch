@@ -1,16 +1,10 @@
-# PyTorch reimplementation of the provided TensorFlow-based graph_view visualization utility
-# Replaces Keras model handling with PyTorch nn.Module traversal
-# Preserves architecture visualization in layered graph form using PIL + aggdraw
-
-from typing import Any, Dict, List
+from typing import Any
 from PIL import Image
 import aggdraw
 from math import ceil
-import torch
+
 import torch.nn as nn
 
-# Replace these with your existing Box, Circle, Ellipses, ColorWheel utils
-# For now we will use simplified placeholders:
 
 class Box:
     def __init__(self):

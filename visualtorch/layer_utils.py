@@ -89,12 +89,12 @@ def extract_primary_shape(layer_output_shape, layer_name=None):
     # Handle None case - warn and use default
     if layer_output_shape is None:
         warnings.warn(
-            f"Layer output shape is None{layer_info}. This may indicate an unbuilt model "
+            f"Layer output shape is None{layer_info}. This may indicate a demolish model "
             f"or invalid layer configuration. Using default shape (None, 1) for visualization.",
             UserWarning,
             stacklevel=3
         )
-        return (None, 1)
+        return None, 1
 
     # Handle tuple case
     if isinstance(layer_output_shape, tuple):
@@ -136,7 +136,7 @@ def extract_primary_shape(layer_output_shape, layer_name=None):
                 UserWarning,
                 stacklevel=3
             )
-            return (None, 1)
+            return None, 1
 
     # Unsupported format
     else:
@@ -147,16 +147,14 @@ def extract_primary_shape(layer_output_shape, layer_name=None):
 
 
 def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, min_xy, one_dim_orientation='y', sizing_mode='accurate', dimension_caps=None, relative_base_size=20):
-    dims = [d for d in shape if isinstance(d, int) and d is not None]
+    dims = tuple([d for d in shape if isinstance(d, int) and d is not None])
     if not dims:
-        return (min_xy, min_xy, min_z)
+        return min_xy, min_xy, min_z
 
     channel_cap = dimension_caps.get(
         'channels', max_z) if dimension_caps else max_z
     sequence_cap = dimension_caps.get(
         'sequence', max_xy) if dimension_caps else max_xy
-    general_cap = dimension_caps.get('general', max(
-        max_z, max_xy)) if dimension_caps else max(max_z, max_xy)
 
     def smart_scale(value, base_scale, min_val, cap_val):
         """
@@ -174,8 +172,8 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
             return min(max(value * base_scale * 0.3, min_val), cap_val)
         else:
             # Very large dimensions: use logarithmic scaling but still maintain relativity
-            log_scale = math.log10(value) * base_scale * 15
-            return min(max(log_scale, min_val), cap_val)
+            rel_log_scale = math.log10(value) * base_scale * 15
+            return min(max(rel_log_scale, min_val), cap_val)
 
     def log_scale(value, base_scale, min_val, cap_val):
         if value <= 1:
@@ -188,79 +186,79 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
         if len(dims) == 1:
             if one_dim_orientation == 'y':
                 y = min(max(dims[0] * scale_xy, min_xy), max_xy)
-                return (min_xy, y, min_z)
+                return min_xy, y, min_z
             else:
                 z = min(max(dims[0] * scale_z, min_z), max_z)
-                return (min_xy, min_xy, z)
+                return min_xy, min_xy, z
         elif len(dims) == 2:
             x = min(max(dims[0] * scale_xy, min_xy), max_xy)
             y = min(max(dims[1] * scale_xy, min_xy), max_xy)
             z = min(max(dims[1] * scale_z, min_z), max_z)
-            return (x, y, z)
+            return x, y, z
         else:
             x = min(max(dims[0] * scale_xy, min_xy), max_xy)
             y = min(max(dims[1] * scale_xy, min_xy), max_xy)
             z = min(max(self_multiply(dims[2:]) * scale_z, min_z), max_z)
-            return (x, y, z)
+            return x, y, z
 
     # Capped mode
     elif sizing_mode == 'capped':
         if len(dims) == 1:
             if one_dim_orientation == 'y':
                 y = max(min(dims[0] * scale_xy, sequence_cap), min_xy)
-                return (min_xy, y, min_z)
+                return min_xy, y, min_z
             else:
                 z = max(min(dims[0] * scale_z, channel_cap), min_z)
-                return (min_xy, min_xy, z)
+                return min_xy, min_xy, z
         elif len(dims) == 2:
             x = max(min(dims[0] * scale_xy, sequence_cap), min_xy)
             y = max(min(dims[1] * scale_xy, sequence_cap), min_xy)
             z = max(min(dims[2] * scale_z if len(dims)
                     > 2 else min_z, channel_cap), min_z)
-            return (x, y, z)
+            return x, y, z
 
     # Balanced mode
     elif sizing_mode == 'balanced':
         if len(dims) == 1:
             if one_dim_orientation == 'y':
                 y = smart_scale(dims[0], scale_xy, min_xy, sequence_cap)
-                return (min_xy, int(y), min_z)
+                return min_xy, int(y), min_z
             else:
                 z = smart_scale(dims[0], scale_z, min_z, channel_cap)
-                return (min_xy, min_xy, int(z))
+                return min_xy, min_xy, int(z)
         else:
             x = smart_scale(dims[0], scale_xy, min_xy, sequence_cap)
             y = smart_scale(dims[1], scale_xy, min_xy, sequence_cap)
             z = smart_scale(dims[2] if len(dims) > 2 else 1,
                             scale_z, min_z, channel_cap)
-            return (int(x), int(y), int(z))
+            return int(x), int(y), int(z)
 
     # Logarithmic mode
     elif sizing_mode == 'logarithmic':
         if len(dims) == 1:
             if one_dim_orientation == 'y':
                 y = log_scale(dims[0], scale_xy, min_xy, sequence_cap)
-                return (min_xy, int(y), min_z)
+                return min_xy, int(y), min_z
             else:
                 z = log_scale(dims[0], scale_z, min_z, channel_cap)
-                return (min_xy, min_xy, int(z))
+                return min_xy, min_xy, int(z)
         else:
             x = log_scale(dims[0], scale_xy, min_xy, sequence_cap)
             y = log_scale(dims[1], scale_xy, min_xy, sequence_cap)
             z = log_scale(dims[2] if len(dims) > 2 else 1,
                           scale_z, min_z, channel_cap)
-            return (int(x), int(y), int(z))
+            return int(x), int(y), int(z)
 
     # Relative mode - True proportional scaling where each layer's size is directly proportional to its dimension
     elif sizing_mode == 'relative':
-        def proportional_scale(dimension, relative_base_size, min_val, max_val):
+        def proportional_scale(dimension, rel_base_size, min_val, max_val):
             """
             Scale dimension proportionally where relative_base_size represents 
             the visual size for dimension=1.
 
             Args:
                 dimension (int): The dimension value to scale
-                relative_base_size (int): Visual size (in pixels) for dimension=1
+                rel_base_size (int): Visual size (in pixels) for dimension=1
                 min_val (int): Minimum allowed scaled value
                 max_val (int): Maximum allowed scaled value
 
@@ -273,7 +271,7 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
                 return min_val
 
             # True proportional scaling: dimension * base_size
-            scaled = dimension * relative_base_size
+            scaled = dimension * rel_base_size
 
             # Apply min/max constraints while preserving proportionality as much as possible
             return max(min_val, min(scaled, max_val))
@@ -282,11 +280,11 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
             if one_dim_orientation == 'y':
                 y = proportional_scale(
                     dims[0], relative_base_size, min_xy, sequence_cap)
-                return (min_xy, y, min_z)
+                return min_xy, y, min_z
             else:
                 z = proportional_scale(
                     dims[0], relative_base_size, min_z, channel_cap)
-                return (min_xy, min_xy, z)
+                return min_xy, min_xy, z
         elif len(dims) == 2:
             x = proportional_scale(
                 dims[0], relative_base_size, min_xy, sequence_cap)
@@ -296,7 +294,7 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
             # For 2D layers, use the second dimension for z-scaling as well
             z = proportional_scale(
                 dims[1], relative_base_size, min_z, channel_cap)
-            return (x, y, z)
+            return x, y, z
         else:
             # 3D+ layers: handle spatial dimensions and channels separately
             x = proportional_scale(
@@ -308,7 +306,7 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
             channel_product = self_multiply(dims[2:]) if len(dims) > 2 else 1
             z = proportional_scale(
                 channel_product, relative_base_size, min_z, channel_cap)
-            return (x, y, z)
+            return x, y, z
     else:
         warnings.warn(
             f"Unknown sizing mode '{sizing_mode}'. Defaulting to accurate.",
@@ -323,4 +321,3 @@ def calculate_layer_dimensions(shape, scale_z, scale_xy, max_z, max_xy, min_z, m
             dimension_caps=dimension_caps, relative_base_size=relative_base_size
         )
 
-    return (x, y, z)
