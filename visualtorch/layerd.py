@@ -10,58 +10,8 @@ from .utils import *
 from .layer_utils import *
 
 
-class Box(RectShape):
-    de: int
-    shade: int
-
-    def draw(self, draw: ImageDraw, draw_reversed: bool = False):
-        pen, brush = self._get_pen_brush()
-
-        # Cast coordinates to int for aggdraw compatibility
-        x1, y1, x2, y2 = map(int, (self.x1, self.y1, self.x2, self.y2))
-        de = int(self.de)
-
-        if hasattr(self, 'de') and self.de > 0:
-            brush_s1 = aggdraw.Brush(fade_color(self.fill, self.shade))
-            brush_s2 = aggdraw.Brush(fade_color(self.fill, 2 * self.shade))
-
-            if draw_reversed:
-                draw.line([x2 - de, y1 - de, x2 - de, y2 - de], pen)
-                draw.line([x2 - de, y2 - de, x2, y2], pen)
-                draw.line([x1 - de, y2 - de, x2 - de, y2 - de], pen)
-
-                draw.polygon([x1, y1,
-                              x1 - de, y1 - de,
-                              x2 - de, y1 - de,
-                              x2, y1
-                              ], pen, brush_s1)
-
-                draw.polygon([x1 - de, y1 - de,
-                              x1, y1,
-                              x1, y2,
-                              x1 - de, y2 - de
-                              ], pen, brush_s2)
-            else:
-                draw.line([x1 + de, y1 - de, x1 + de, y2 - de], pen)
-                draw.line([x1 + de, y2 - de, x1, y2], pen)
-                draw.line([x1 + de, y2 - de, x2 + de, y2 - de], pen)
-
-                draw.polygon([x1, y1,
-                              x1 + de, y1 - de,
-                              x2 + de, y1 - de,
-                              x2, y1
-                              ], pen, brush_s1)
-
-                draw.polygon([x2 + de, y1 - de,
-                              x2, y1,
-                              x2, y2,
-                              x2 + de, y2 - de
-                              ], pen, brush_s2)
-
-        draw.rectangle([x1, y1, x2, y2], pen, brush)
-
-
 def layered_view(model: nn.Module,
+                 input_shape: tuple = None,
                  to_file: str = None,
                  min_z: int = 20,
                  min_xy: int = 20,
@@ -77,7 +27,7 @@ def layered_view(model: nn.Module,
                  background_fill: Any = 'white',
                  draw_volume: bool = True,
                  draw_reversed: bool = False,
-                 padding: int = 20,  # Increased padding for safety
+                 padding: int = 20,
                  text_callable: Callable[[int, nn.Module], tuple] = None,
                  text_vspacing: int = 4,
                  spacing: int = 10,
@@ -93,6 +43,40 @@ def layered_view(model: nn.Module,
                  relative_base_size: int = 20) -> Image:
     """
     Generates a layered architecture visualization for a given PyTorch model.
+    Args:
+        model (nn.Module): The PyTorch model to visualize.
+        input_shape (tuple): Shape of the input tensor to the model.
+        to_file (str): If provided, saves the image to this file path.
+        min_z (int): Minimum width of the layer boxes.
+        min_xy (int): Minimum height of the layer boxes.
+        max_z (int): Maximum width of the layer boxes.
+        max_xy (int): Maximum height of the layer boxes.
+        scale_z (float): Scaling factor for the width of the layer boxes.
+        scale_xy (float): Scaling factor for the height of the layer boxes.
+        type_ignore (list): List of layer types to ignore in visualization.
+        index_ignore (list): List of layer indices to ignore in visualization.
+        color_map (dict): Custom color mapping for layer types.
+        one_dim_orientation (str): Orientation for one-dimensional layers ('x', 'y', 'z').
+        index_2D (list): List of layer indices that should be treated as 2D layers.
+        background_fill (Any): Background color for the image.
+        draw_volume (bool): Whether to draw volume for 3D layers.
+        draw_reversed (bool): Whether to draw boxes in reverse order.
+        padding (int): Padding around the image.
+        text_callable (Callable): Function to generate text for each layer.
+        text_vspacing (int): Vertical spacing for layer text.
+        spacing (int): Spacing between layer boxes.
+        draw_funnel (bool): Whether to draw funnel lines between layers.
+        shade_step (int): Step size for shading the boxes.
+        legend (bool): Whether to include a legend for layer types.
+        legend_text_spacing_offset (int): Spacing offset for legend text.
+        font (ImageFont): Font to use for layer text.
+        font_color (Any): Color of the font for layer text.
+        show_dimension (bool): Whether to show dimensions in the layer boxes.
+        sizing_mode (str): Sizing mode for the layer boxes ('accurate', 'balanced', etc.).
+        dimension_caps (dict): Caps for dimensions to prevent excessive sizes.
+        relative_base_size (int): Base size for relative dimension scaling.
+    Returns:
+        Image: The generated image of the model architecture.
     """
 
     # Collect output shapes via forward hooks
