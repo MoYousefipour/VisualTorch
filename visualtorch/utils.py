@@ -286,3 +286,61 @@ def linear_layout(images: list, max_width: int = -1, max_height: int = -1, horiz
     for img, coord in zip(images, coords):
         layout.paste(img, coord)
     return layout
+
+
+
+def tikz_header():
+    return   r"""\documentclass[border=8pt, multi, tikz]{standalone} 
+\usepackage{import}
+\subimport{.}{init}
+\usetikzlibrary{positioning}
+\usetikzlibrary{3d} %for including external image 
+\def\ConvColor{rgb:yellow,5;red,2.5;white,5}
+\def\ConvReluColor{rgb:yellow,5;red,5;white,5}
+\def\PoolColor{rgb:red,1;black,0.3}
+\def\UnpoolColor{rgb:blue,2;green,1;black,0.3}
+\def\FcColor{rgb:blue,5;red,2.5;white,5}
+\def\FcReluColor{rgb:blue,5;red,5;white,4}
+\def\SoftmaxColor{rgb:magenta,5;black,7}   
+\def\SumColor{rgb:blue,5;green,15}
+\newcommand{\copymidarrow}{\tikz \draw[-Stealth,line width=0.8mm,draw={rgb:blue,4;red,1;green,1;black,3}] (-0.3,0) -- ++(0.3,0);}
+\begin{document}
+\begin{tikzpicture}
+\tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
+\tikzstyle{copyconnection}=[ultra thick,every node/.style={sloped,allow upside down},draw={rgb:blue,4;red,1;green,1;black,3},opacity=0.7]
+"""
+
+
+def tikz_end():
+    return r"""
+\end{tikzpicture}
+\end{document}
+"""
+
+
+def tikz_Conv( name, s_filer=256, n_filer=64, offset="(0,0,0)", to="(0,0,0)", width=1, height=40, depth=40, caption=" " ):
+    return r"""
+    \pic[shift={"""+ offset +"""}] at """+ to +""" 
+        {Box={
+            name=""" + name +""",
+            caption="""+ caption +r""",
+            xlabel={{"""+ str(n_filer) +""", }},
+            zlabel="""+ str(s_filer) +""",
+            fill=\ConvColor,
+            height="""+ str(height) +""",
+            width="""+ str(width) +""",
+            depth="""+ str(depth) +"""
+            }
+        };
+"""
+
+
+def tikz_save(file_name:str,layers:list):
+    with open(file_name,'w') as f:
+        f.write(tikz_header())
+        for layer in layers:
+            f.write(layer)
+            f.write('\n')
+        f.write(tikz_end())
+    f.close()
+    print(f"{file_name} is successfully created!")
