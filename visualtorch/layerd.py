@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable,Any
 from PIL import Image, ImageDraw,ImageFont
 from math import ceil
 import torch
@@ -12,16 +12,15 @@ from .layer_utils import *
 def layered_view(model: nn.Module,
                  input_shape: tuple = None,
                  to_file: str = None,
-                 min_z: int = 20,
-                 min_xy: int = 20,
-                 max_z: int = 400,
-                 max_xy: int = 2000,
-                 scale_z: float = 1.5,
-                 scale_xy: float = 4,
+                 min_z: int = 1,
+                 min_xy: int = 1,
+                 max_z: int = 50,
+                 max_xy: int = 50,
+                 scale_z: float = 2,
+                 scale_xy: float = 2,
                  type_ignore: list = None,
                  index_ignore: list = None,
                  color_map: dict = None,
-                 one_dim_orientation: str = 'z',
                  index_2d=None,
                  background_fill: Any = 'white',
                  draw_volume: bool = True,
@@ -36,7 +35,6 @@ def layered_view(model: nn.Module,
                  font: ImageFont = None,
                  font_color: Any = 'black',
                  show_dimension=False,
-                 sizing_mode: str = 'accurate',
                  dimension_caps: dict = None,
                  relative_base_size: int = 20) -> Image:
     """
@@ -54,7 +52,6 @@ def layered_view(model: nn.Module,
         type_ignore (list): List of layer types to ignore in visualization.
         index_ignore (list): List of layer indices to ignore in visualization.
         color_map (dict): Custom color mapping for layer types.
-        one_dim_orientation (str): Orientation for one-dimensional layers ('x', 'y', 'z').
         index_2d (list): List of layer indices that should be treated as 2D layers.
         background_fill (Any): Background color for the image.
         draw_volume (bool): Whether to draw volume for 3D layers.
@@ -69,7 +66,6 @@ def layered_view(model: nn.Module,
         font (ImageFont): Font to use for layer text.
         font_color (Any): Color of the font for layer text.
         show_dimension (bool): Whether to show dimensions in the layer boxes.
-        sizing_mode (str): Sizing mode for the layer boxes ('accurate', 'balanced', etc.).
         dimension_caps (dict): Caps for dimensions to prevent excessive sizes.
         relative_base_size (int): Base size for relative dimension scaling.
     Returns:
@@ -88,7 +84,7 @@ def layered_view(model: nn.Module,
 
     hooks = []
     for layer in model.modules():
-        if isinstance(layer, (nn.Conv2d, nn.Linear, nn.MaxPool2d, nn.ReLU, nn.BatchNorm2d, nn.Flatten)):
+        # if isinstance(layer, (nn.Conv2d, nn.Linear, nn.MaxPool2d, nn.ReLU, nn.BatchNorm2d, nn.Flatten)):
             hooks.append(layer.register_forward_hook(hook))
 
     # Run dummy forward pass to activate hooks and collect shapes
@@ -96,14 +92,6 @@ def layered_view(model: nn.Module,
         # Create a dummy input tensor with batch size 1 matching model input
         next(model.modules())
         if hasattr(model, 'forward'):
-            for m in model.modules():
-                if hasattr(m, 'in_features'):
-                    input_shape = (1, m.in_features)
-                    break
-                elif hasattr(m, 'in_channels'):
-                    # default spatial size
-                    input_shape = (1, m.in_channels, 64, 64)
-                    break
             if input_shape is None:
                 input_shape = (1, 3, 64, 64)
             dummy_input = torch.randn(input_shape)
@@ -117,7 +105,7 @@ def layered_view(model: nn.Module,
         
     boxes = []
     layer_y = []
-    color_wheel = ColorWheel()
+    # color_wheel = ColorWheel()
     current_z = padding
     x_off = -1
 
@@ -144,16 +132,28 @@ def layered_view(model: nn.Module,
         x, y, z = calculate_layer_dimensions(
             shape, scale_z, scale_xy,
             max_z, max_xy, min_z, min_xy,
-            one_dim_orientation, sizing_mode,
             dimension_caps, relative_base_size
         )
         
         layer_type = type(layer)
         compile_layer=None
         if layer_type == nn.Conv2d:
-            compile_layer=tikz_Conv("Conv2d",offset=f"({current_z},0,0)")
-            current_z += z + spacing
+            compile_layer=tikz_Conv(f"conv2d-{idx}",n_filer=shape[1],s_filer=shape[-1],offset=f"({current_z},0,0)",height=y,depth=x,width=z,caption=layer_type.__name__)
+        elif layer_type == nn.MaxPool2d:
+            compile_layer=tikz_Pool(f"maxpool2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+        elif layer_type == nn.Linear:
+            compile_layer = tikz_Fc(f"fc-linear-{idx}",n_filer=shape[1],s_filer=shape[-1],offset=f"({current_z},0,0)",depth=x,caption=layer_type.__name__)
+        elif layer_type == nn.Softmax:
+            compile_layer = tikz_ConvSoftMax(f"softmax-{idx}",s_filer=shape[-1],offset=f"({current_z},0,0)",caption=layer_type.__name__)
+        elif layer_type == nn.AdaptiveAvgPool2d:
+            compile_layer=tikz_Pool(f"adaptivepool2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+        elif layer_type == nn.BatchNorm2d:
+            compile_layer=tikz_Pool(f"batchnorm2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+        elif layer_type == nn.ReLU:
+            compile_layer=tikz_Relu(f"relu-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+        if compile_layer:
             compiled_list.append(compile_layer)
+            current_z += z//4 + spacing
         
     if to_file:
         tikz_save(to_file,compiled_list)
