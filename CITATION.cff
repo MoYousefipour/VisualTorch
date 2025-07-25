@@ -1,0 +1,21 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: VisualTorch
+message: ' "If you use this software, please cite it as below."'
+type: software
+authors:
+  - given-names: Mohammad
+    family-names: Yousefipour
+    email: moyousefipour79@gmail.com
+    affiliation: >-
+      Department of Computer Engineering, Faculty of
+      Engineering, Shahid Chamran University of Ahvaz,
+      Ahvaz, Iran
+    orcid: 'https://orcid.org/0009-0003-6422-6893'
+repository-code: 'https://github.com/MoYousefipour/VisualTorch'
+license: MIT
+commit: e2c5254660b085767825b7c6c894723cfd1f93d3
+version: 0.1.0
+date-released: '2025-07-25'
