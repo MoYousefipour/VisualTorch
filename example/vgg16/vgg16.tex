@@ -1,0 +1,632 @@
+\documentclass[border=8pt, multi, tikz]{standalone} 
+\usepackage{import}
+\subimport{./styles}{init}
+\usetikzlibrary{positioning}
+\usetikzlibrary{3d} %for including external image 
+\newcommand{\copymidarrow}{\tikz \draw[-Stealth,line width=0.8mm,draw={rgb:blue,4;red,1;green,1;black,3}] (-0.3,0) -- ++(0.3,0);}
+
+\def\ConvColor{rgb:yellow,5;red,2.5;white,5}
+\def\ConvReluColor{rgb:yellow,5;red,5;white,5}
+\def\PoolColor{rgb:red,1;black,0.3}
+\def\UnpoolColor{rgb:blue,2;green,1;black,0.3}
+\def\FcColor{rgb:blue,5;red,2.5;white,5}
+\def\FcReluColor{rgb:blue,5;red,5;white,4}
+\def\ReluColor{rgb:blue,5;red,0;white,4}
+\def\SoftmaxColor{rgb:magenta,5;black,7}   
+\def\SumColor{rgb:blue,5;green,15}
+
+\begin{document}
+\begin{tikzpicture}
+\tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
+\tikzstyle{copyconnection}=[ultra thick,every node/.style={sloped,allow upside down},draw={rgb:blue,4;red,1;green,1;black,3},opacity=0.7]
+
+    \pic[shift={(1,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-1,
+            caption=Conv2d,
+            xlabel={{64, }},
+            zlabel=224,
+            fill=\ConvColor,
+            height=27,
+            width=2,
+            depth=27
+            }
+        };
+
+
+\pic[shift={ (3.25,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-2,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=27,
+        width=1,
+        depth=27
+        }
+    };
+
+
+    \pic[shift={(5.5,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-3,
+            caption=Conv2d,
+            xlabel={{64, }},
+            zlabel=224,
+            fill=\ConvColor,
+            height=27,
+            width=2,
+            depth=27
+            }
+        };
+
+
+\pic[shift={ (7.75,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-4,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=13,
+        width=1,
+        depth=13
+        }
+    };
+
+
+\pic[shift={ (10.0,0,0) }] at (0,0,0) 
+    {Box={
+        name=maxpool2d-5,
+        caption=MaxPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=13,
+        width=1,
+        depth=13
+        }
+    };
+
+
+    \pic[shift={(12.625,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-6,
+            caption=Conv2d,
+            xlabel={{128, }},
+            zlabel=112,
+            fill=\ConvColor,
+            height=13,
+            width=5,
+            depth=13
+            }
+        };
+
+
+\pic[shift={ (15.25,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-7,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=13,
+        width=1,
+        depth=13
+        }
+    };
+
+
+    \pic[shift={(17.875,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-8,
+            caption=Conv2d,
+            xlabel={{128, }},
+            zlabel=112,
+            fill=\ConvColor,
+            height=13,
+            width=5,
+            depth=13
+            }
+        };
+
+
+\pic[shift={ (20.5,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-9,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=6,
+        width=1,
+        depth=6
+        }
+    };
+
+
+\pic[shift={ (23.125,0,0) }] at (0,0,0) 
+    {Box={
+        name=maxpool2d-10,
+        caption=MaxPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=6,
+        width=1,
+        depth=6
+        }
+    };
+
+
+    \pic[shift={(26.375,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-11,
+            caption=Conv2d,
+            xlabel={{256, }},
+            zlabel=56,
+            fill=\ConvColor,
+            height=6,
+            width=10,
+            depth=6
+            }
+        };
+
+
+\pic[shift={ (29.625,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-12,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=6,
+        width=1,
+        depth=6
+        }
+    };
+
+
+    \pic[shift={(32.875,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-13,
+            caption=Conv2d,
+            xlabel={{256, }},
+            zlabel=56,
+            fill=\ConvColor,
+            height=6,
+            width=10,
+            depth=6
+            }
+        };
+
+
+\pic[shift={ (36.125,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-14,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=6,
+        width=1,
+        depth=6
+        }
+    };
+
+
+    \pic[shift={(39.375,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-15,
+            caption=Conv2d,
+            xlabel={{256, }},
+            zlabel=56,
+            fill=\ConvColor,
+            height=6,
+            width=10,
+            depth=6
+            }
+        };
+
+
+\pic[shift={ (42.625,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-16,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=3,
+        width=1,
+        depth=3
+        }
+    };
+
+
+\pic[shift={ (45.875,0,0) }] at (0,0,0) 
+    {Box={
+        name=maxpool2d-17,
+        caption=MaxPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=3,
+        width=1,
+        depth=3
+        }
+    };
+
+
+    \pic[shift={(50.375,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-18,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=28,
+            fill=\ConvColor,
+            height=3,
+            width=20,
+            depth=3
+            }
+        };
+
+
+\pic[shift={ (54.875,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-19,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=3,
+        width=1,
+        depth=3
+        }
+    };
+
+
+    \pic[shift={(59.375,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-20,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=28,
+            fill=\ConvColor,
+            height=3,
+            width=20,
+            depth=3
+            }
+        };
+
+
+\pic[shift={ (63.875,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-21,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=3,
+        width=1,
+        depth=3
+        }
+    };
+
+
+    \pic[shift={(68.375,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-22,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=28,
+            fill=\ConvColor,
+            height=3,
+            width=20,
+            depth=3
+            }
+        };
+
+
+\pic[shift={ (72.875,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-23,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+\pic[shift={ (77.375,0,0) }] at (0,0,0) 
+    {Box={
+        name=maxpool2d-24,
+        caption=MaxPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+    \pic[shift={(81.875,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-25,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=14,
+            fill=\ConvColor,
+            height=1,
+            width=20,
+            depth=1
+            }
+        };
+
+
+\pic[shift={ (86.375,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-26,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+    \pic[shift={(90.875,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-27,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=14,
+            fill=\ConvColor,
+            height=1,
+            width=20,
+            depth=1
+            }
+        };
+
+
+\pic[shift={ (95.375,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-28,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+    \pic[shift={(99.875,0,0)}] at (0,0,0) 
+        {Box={
+            name=conv2d-29,
+            caption=Conv2d,
+            xlabel={{512, }},
+            zlabel=14,
+            fill=\ConvColor,
+            height=1,
+            width=20,
+            depth=1
+            }
+        };
+
+
+\pic[shift={ (104.375,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-30,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+\pic[shift={ (108.875,0,0) }] at (0,0,0) 
+    {Box={
+        name=maxpool2d-31,
+        caption=MaxPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+\pic[shift={ (113.375,0,0) }] at (0,0,0) 
+    {Box={
+        name=adaptivepool2d-32,
+        caption=AdaptiveAvgPool2d,
+        fill=\PoolColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=1
+        }
+    };
+
+
+    \pic[shift={(117.875,0,0)}] at (0,0,0) 
+        {RightBandedBox={
+            name=fc-linear-34,
+            caption=Linear,
+            xlabel={{4096, }},
+            zlabel=4096,
+            fill=\FcColor,
+            bandfill=\FcReluColor,
+            height=3,
+            width=3,
+            depth=50
+            }
+        };
+
+
+\pic[shift={ (120.0,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-35,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=50
+        }
+    };
+
+
+    \pic[shift={(122.125,0,0)}] at (0,0,0) 
+        {RightBandedBox={
+            name=fc-linear-37,
+            caption=Linear,
+            xlabel={{4096, }},
+            zlabel=4096,
+            fill=\FcColor,
+            bandfill=\FcReluColor,
+            height=3,
+            width=3,
+            depth=50
+            }
+        };
+
+
+\pic[shift={ (124.25,0,0) }] at (0,0,0) 
+    {Box={
+        name=relu-38,
+        caption=ReLU,
+        fill=\ReluColor,
+        opacity=0.5,
+        height=1,
+        width=1,
+        depth=50
+        }
+    };
+
+
+    \pic[shift={(126.375,0,0)}] at (0,0,0) 
+        {RightBandedBox={
+            name=fc-linear-40,
+            caption=Linear,
+            xlabel={{1000, }},
+            zlabel=1000,
+            fill=\FcColor,
+            bandfill=\FcReluColor,
+            height=3,
+            width=3,
+            depth=50
+            }
+        };
+
+
+\draw [connection]  (conv2d-1-east)    -- node {\midarrow} (relu-2-west);
+
+
+\draw [connection]  (relu-2-east)    -- node {\midarrow} (conv2d-3-west);
+
+
+\draw [connection]  (conv2d-3-east)    -- node {\midarrow} (relu-4-west);
+
+
+\draw [connection]  (relu-4-east)    -- node {\midarrow} (maxpool2d-5-west);
+
+
+\draw [connection]  (maxpool2d-5-east)    -- node {\midarrow} (conv2d-6-west);
+
+
+\draw [connection]  (conv2d-6-east)    -- node {\midarrow} (relu-7-west);
+
+
+\draw [connection]  (relu-7-east)    -- node {\midarrow} (conv2d-8-west);
+
+
+\draw [connection]  (conv2d-8-east)    -- node {\midarrow} (relu-9-west);
+
+
+\draw [connection]  (relu-9-east)    -- node {\midarrow} (maxpool2d-10-west);
+
+
+\draw [connection]  (maxpool2d-10-east)    -- node {\midarrow} (conv2d-11-west);
+
+
+\draw [connection]  (conv2d-11-east)    -- node {\midarrow} (relu-12-west);
+
+
+\draw [connection]  (relu-12-east)    -- node {\midarrow} (conv2d-13-west);
+
+
+\draw [connection]  (conv2d-13-east)    -- node {\midarrow} (relu-14-west);
+
+
+\draw [connection]  (relu-14-east)    -- node {\midarrow} (conv2d-15-west);
+
+
+\draw [connection]  (conv2d-15-east)    -- node {\midarrow} (relu-16-west);
+
+
+\draw [connection]  (relu-16-east)    -- node {\midarrow} (maxpool2d-17-west);
+
+
+\draw [connection]  (maxpool2d-17-east)    -- node {\midarrow} (conv2d-18-west);
+
+
+\draw [connection]  (conv2d-18-east)    -- node {\midarrow} (relu-19-west);
+
+
+\draw [connection]  (relu-19-east)    -- node {\midarrow} (conv2d-20-west);
+
+
+\draw [connection]  (conv2d-20-east)    -- node {\midarrow} (relu-21-west);
+
+
+\draw [connection]  (relu-21-east)    -- node {\midarrow} (conv2d-22-west);
+
+
+\draw [connection]  (conv2d-22-east)    -- node {\midarrow} (relu-23-west);
+
+
+\draw [connection]  (relu-23-east)    -- node {\midarrow} (maxpool2d-24-west);
+
+
+\draw [connection]  (maxpool2d-24-east)    -- node {\midarrow} (conv2d-25-west);
+
+
+\draw [connection]  (conv2d-25-east)    -- node {\midarrow} (relu-26-west);
+
+
+\draw [connection]  (relu-26-east)    -- node {\midarrow} (conv2d-27-west);
+
+
+\draw [connection]  (conv2d-27-east)    -- node {\midarrow} (relu-28-west);
+
+
+\draw [connection]  (relu-28-east)    -- node {\midarrow} (conv2d-29-west);
+
+
+\draw [connection]  (conv2d-29-east)    -- node {\midarrow} (relu-30-west);
+
+
+\draw [connection]  (relu-30-east)    -- node {\midarrow} (maxpool2d-31-west);
+
+
+\draw [connection]  (maxpool2d-31-east)    -- node {\midarrow} (adaptivepool2d-32-west);
+
+
+\draw [connection]  (adaptivepool2d-32-east)    -- node {\midarrow} (fc-linear-34-west);
+
+
+\draw [connection]  (fc-linear-34-east)    -- node {\midarrow} (relu-35-west);
+
+
+\draw [connection]  (relu-35-east)    -- node {\midarrow} (fc-linear-37-west);
+
+
+\draw [connection]  (fc-linear-37-east)    -- node {\midarrow} (relu-38-west);
+
+
+\draw [connection]  (relu-38-east)    -- node {\midarrow} (fc-linear-40-west);
+
+
+\end{tikzpicture}
+\end{document}
