@@ -3,7 +3,7 @@ def min_max(value,base_scale, min_val, cap_val):
         return int(max(min_val,min(scaled_size,cap_val)))
 
 def tikz_colors():
-    return """
+    return r"""
 \def\ConvColor{rgb:yellow,5;red,2.5;white,5}
 \def\ConvReluColor{rgb:yellow,5;red,5;white,5}
 \def\PoolColor{rgb:red,1;black,0.3}
@@ -14,8 +14,7 @@ def tikz_colors():
 \def\SoftmaxColor{rgb:magenta,5;black,7}   
 \def\SumColor{rgb:blue,5;green,15}
 """
-    
-    
+
 def tikz_header():
     return   r"""\documentclass[border=8pt, multi, tikz]{standalone} 
 \usepackage{import}
@@ -203,13 +202,17 @@ def tikz_Relu(name, offset="(0,0,0)", to="(0,0,0)", width=1, height=32, depth=32
 
 
 
-def tikz_save(file_name:str,layers:list):
+def tikz_save(file_name:str,layers:list,lines:list):
     with open(file_name,'w') as f:
         f.write(tikz_header())
         f.write(tikz_colors())
         f.write(tikz_start())
         for layer in layers:
             f.write(layer)
+            f.write('\n')
+        
+        for line in lines:
+            f.write(line)
             f.write('\n')
         f.write(tikz_end())
     f.close()
