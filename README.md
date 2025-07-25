@@ -17,3 +17,22 @@ version = {0.1.0},
 year = {2025}
 }
 ```
+## How to Use
+Clone the repository.
+
+```terminal
+clone https://github.com/MoYousefipour/VisualTorch.git
+```
+Change `test.py` file with you model that written with torch for example for vgg16:
+
+```python
+from torchvision.models import vgg16
+import visualtorch
+import torch.nn as nn
+model = vgg16()
+visualtorch.layered_view(
+    model,input_shape=(1,3,224,224),to_file='vgg16.tex',spacing=2,padding=1)
+```
+Run `test.py` file, then compile the `.tex` file that given to see vgg16 architecture.
+
+see <a href="https://github.com/MoYousefipour/VisualTorch/tree/master/example/vgg16"> VGG16 example!</a> 
