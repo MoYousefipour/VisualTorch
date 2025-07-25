@@ -3,7 +3,7 @@ Visualtorch is a Python package to help visualize torch (either standalone or in
 
 This work is inspired from "paulgavrikov/visualkeras" which is makeing layers from Tensorflow and Keras, and using styles of "HarisIqbal88/PlotNeuralNet" to make it ready to work.
 
- ** Citation **
+ **Citation**
 
 If you find this project helpful for your research please consider citing it in your publication as follows.
 ```
