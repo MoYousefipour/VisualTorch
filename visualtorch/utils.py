@@ -1,288 +1,219 @@
-from typing import Any
-from PIL import ImageColor, Image
-import aggdraw
+def min_max(value,base_scale, min_val, cap_val):
+        scaled_size=(value - min_val)/(cap_val - min_val) * base_scale
+        return int(max(min_val,min(scaled_size,cap_val)))
 
-class RectShape:
-    x1: int
-    x2: int
-    y1: int
-    y2: int
-    _fill: Any
-    _outline: Any
+def tikz_colors():
+    return r"""
+\def\ConvColor{rgb:yellow,5;red,2.5;white,5}
+\def\ConvReluColor{rgb:yellow,5;red,5;white,5}
+\def\PoolColor{rgb:red,1;black,0.3}
+\def\UnpoolColor{rgb:blue,2;green,1;black,0.3}
+\def\FcColor{rgb:blue,5;red,2.5;white,5}
+\def\FcReluColor{rgb:blue,5;red,5;white,4}
+\def\ReluColor{rgb:blue,5;red,0;white,4}
+\def\SoftmaxColor{rgb:magenta,5;black,7}   
+\def\SumColor{rgb:blue,5;green,15}
+"""
 
-    @property
-    def fill(self):
-        return self._fill
+def tikz_header():
+    return   r"""\documentclass[border=8pt, multi, tikz]{standalone} 
+\usepackage{import}
+\subimport{./styles}{init}
+\usetikzlibrary{positioning}
+\usetikzlibrary{3d} %for including external image 
+\newcommand{\copymidarrow}{\tikz \draw[-Stealth,line width=0.8mm,draw={rgb:blue,4;red,1;green,1;black,3}] (-0.3,0) -- ++(0.3,0);}
+"""
 
-    @property
-    def outline(self):
-        return self._outline
-
-    @fill.setter
-    def fill(self, v):
-        self._fill = get_rgba_tuple(v)
-
-    @outline.setter
-    def outline(self, v):
-        self._outline = get_rgba_tuple(v)
-
-    def _get_pen_brush(self):
-        pen = aggdraw.Pen(self._outline)
-        brush = aggdraw.Brush(self._fill)
-        return pen, brush
-
-    def to_tikz(self):
-        # Base method: subclasses should override
-        raise NotImplementedError("to_tikz() not implemented in base class")
-
-
-class Box(RectShape):
-    de: int = 0
-    shade: int = 20
-
-    def draw(self, draw, draw_reversed: bool = False):
-        pen, brush = self._get_pen_brush()
-
-        if hasattr(self, 'de') and self.de > 0:
-            brush_s1 = aggdraw.Brush(fade_color(self.fill, self.shade))
-            brush_s2 = aggdraw.Brush(fade_color(self.fill, 2 * self.shade))
-
-            if draw_reversed:
-                draw.line([self.x2 - self.de, self.y1 - self.de,
-                          self.x2 - self.de, self.y2 - self.de], pen)
-                draw.line([self.x2 - self.de, self.y2 -
-                          self.de, self.x2, self.y2], pen)
-                draw.line([self.x1 - self.de, self.y2 - self.de,
-                          self.x2 - self.de, self.y2 - self.de], pen)
-
-                draw.polygon([self.x1, self.y1,
-                              self.x1 - self.de, self.y1 - self.de,
-                              self.x2 - self.de, self.y1 - self.de,
-                              self.x2, self.y1
-                              ], pen, brush_s1)
-
-                draw.polygon([self.x1 - self.de, self.y1 - self.de,
-                              self.x1, self.y1,
-                              self.x1, self.y2,
-                              self.x1 - self.de, self.y2 - self.de
-                              ], pen, brush_s2)
-            else:
-                draw.line([self.x1 + self.de, self.y1 - self.de,
-                          self.x1 + self.de, self.y2 - self.de], pen)
-                draw.line([self.x1 + self.de, self.y2 -
-                          self.de, self.x1, self.y2], pen)
-                draw.line([self.x1 + self.de, self.y2 - self.de,
-                          self.x2 + self.de, self.y2 - self.de], pen)
-
-                draw.polygon([self.x1, self.y1,
-                              self.x1 + self.de, self.y1 - self.de,
-                              self.x2 + self.de, self.y1 - self.de,
-                              self.x2, self.y1
-                              ], pen, brush_s1)
-
-                draw.polygon([self.x2 + self.de, self.y1 - self.de,
-                              self.x2, self.y1,
-                              self.x2, self.y2,
-                              self.x2 + self.de, self.y2 - self.de
-                              ], pen, brush_s2)
-
-        draw.rectangle([self.x1, self.y1, self.x2, self.y2], pen, brush)
-
-    def to_tikz(self):
-        fill_color = rgba_to_tikz_color(self.fill)
-        draw_color = rgba_to_tikz_color(self.outline)
-        # Coordinates for TikZ: note y-flip (TikZ y-axis goes up)
-        x1, y1, x2, y2 = self.x1, -self.y1, self.x2, -self.y2
-
-        # Basic rectangle
-        tikz = (
-            f"\\filldraw[fill={fill_color}, draw={draw_color}] "
-            f"({x1},{y1}) rectangle ({x2},{y2});"
-        )
-        return tikz
-
-
-class Circle(RectShape):
-    def draw(self, draw):
-        pen, brush = self._get_pen_brush()
-        draw.ellipse([self.x1, self.y1, self.x2, self.y2], pen, brush)
-
-    def to_tikz(self):
-        fill_color = rgba_to_tikz_color(self.fill)
-        draw_color = rgba_to_tikz_color(self.outline)
-        cx = (self.x1 + self.x2) / 2
-        cy = -(self.y1 + self.y2) / 2  # flip y
-        rx = abs(self.x2 - self.x1) / 2
-        ry = abs(self.y2 - self.y1) / 2
-        if abs(rx - ry) < 1e-3:
-            # Circle
-            tikz = (
-                f"\\filldraw[fill={fill_color}, draw={draw_color}] "
-                f"({cx},{cy}) circle ({rx});"
-            )
-        else:
-            # Ellipse
-            tikz = (
-                f"\\filldraw[fill={fill_color}, draw={draw_color}] "
-                f"({cx},{cy}) ellipse ({rx} and {ry});"
-            )
-        return tikz
-
-
-class Ellipses(RectShape):
-    def draw(self, draw):
-        pen, brush = self._get_pen_brush()
-        w = self.x2 - self.x1
-        d = int(w / 7)
-        draw.ellipse([self.x1 + (w - d) / 2, self.y1 + 1 * d,
-                     self.x1 + (w + d) / 2, self.y1 + 2 * d], pen, brush)
-        draw.ellipse([self.x1 + (w - d) / 2, self.y1 + 3 * d,
-                     self.x1 + (w + d) / 2, self.y1 + 4 * d], pen, brush)
-        draw.ellipse([self.x1 + (w - d) / 2, self.y1 + 5 * d,
-                     self.x1 + (w + d) / 2, self.y1 + 6 * d], pen, brush)
-
-    def to_tikz(self):
-        fill_color = rgba_to_tikz_color(self.fill)
-        draw_color = rgba_to_tikz_color(self.outline)
-        w = self.x2 - self.x1
-        d = w / 7
-
-        cx = self.x1 + w / 2
-        # Positions of three small ellipses vertically spaced, flipped y
-        centers = [
-            (cx, -(self.y1 + 1.5 * d)),
-            (cx, -(self.y1 + 3.5 * d)),
-            (cx, -(self.y1 + 5.5 * d))
-        ]
-        radius_x = d / 2
-        radius_y = d / 2
-
-        tikz = ""
-        for (x, y) in centers:
-            tikz += (
-                f"\\filldraw[fill={fill_color}, draw={draw_color}] "
-                f"({x},{y}) ellipse ({radius_x} and {radius_y});\n"
-            )
-        return tikz
-
-class ColorWheel:
-    def __init__(self, colors: list = None):
-        self._cache = dict()
-        self.colors = colors if colors is not None else [
-            "#ffd166", "#ef476f", "#118ab2", "#073b4c", "#842da1",
-            "#ffbad4", "#fe9775", "#83d483", "#06d6a0", "#0cb0a9"]
-
-    def get_color(self, class_type: type):
-        if class_type not in self._cache.keys():
-            index = len(self._cache.keys()) % len(self.colors)
-            self._cache[class_type] = self.colors[index]
-        return self._cache.get(class_type)
-# Helper functions for color and saving
-
-def rgba_to_tikz_color(rgba):
-    r, g, b, a = rgba
-    # Return TikZ rgb format string with normalized rgb in 0-1
-    return f"{{rgb,255:red,{r};green,{g};blue,{b}}}"
-
-
-def get_rgba_tuple(color: Any) -> tuple:
-    """
-    Convert color to (R, G, B, A) tuple.
-    """
-    if isinstance(color, tuple):
-        rgba = color
-    elif isinstance(color, int):
-        rgba = (color >> 16 & 0xff, color >> 8 & 0xff,
-                color & 0xff, color >> 24 & 0xff)
-    else:
-        rgba = ImageColor.getrgb(color)
-
-    if len(rgba) == 3:
-        rgba = (rgba[0], rgba[1], rgba[2], 255)
-    return rgba
-
-
-def fade_color(color: tuple, fade_amount: int) -> tuple:
-    r = max(0, color[0] - fade_amount)
-    g = max(0, color[1] - fade_amount)
-    b = max(0, color[2] - fade_amount)
-    return r, g, b, color[3]
-
-
-def save_shapes_as_latex(shapes, filename="output.tex", scale=1.0):
-    tikz_commands = []
-    for shape in shapes:
-        tikz_code = shape.to_tikz()
-        # Optionally scale coordinates in tikz_code by `scale` if needed (left as future)
-        tikz_commands.append(tikz_code)
-
-    document = r"""\documentclass[tikz,border=3mm]{standalone}
-\usepackage{xcolor}
+def tikz_start():
+    return r"""
 \begin{document}
-\begin{tikzpicture}[scale=%f, yscale=-1] %% yscale=-1 flips y-axis to match image coords
-%s
+\begin{tikzpicture}
+\tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
+\tikzstyle{copyconnection}=[ultra thick,every node/.style={sloped,allow upside down},draw={rgb:blue,4;red,1;green,1;black,3},opacity=0.7]
+"""
+
+def tikz_end():
+    return r"""
 \end{tikzpicture}
-\end{document}""" % (scale, "\n".join(tikz_commands))
-
-    with open(filename, "w") as f:
-        f.write(document)
-    print(f"LaTeX TikZ code saved to {filename}")
+\end{document}
+"""
 
 
+def tikz_Conv( name, s_filer=256, n_filer=64, offset="(0,0,0)", to="(0,0,0)", width=1, height=40, depth=40, caption=" " ):
+    return r"""
+    \pic[shift={"""+ offset +"""}] at """+ to +""" 
+        {Box={
+            name=""" + name +""",
+            caption="""+ caption +r""",
+            xlabel={{"""+ str(n_filer) +""", }},
+            zlabel="""+ str(s_filer) +""",
+            fill=\ConvColor,
+            height="""+ str(height) +""",
+            width="""+ str(width) +""",
+            depth="""+ str(depth) +"""
+            }
+        };
+"""
 
 
-def get_keys_by_value(d, v):
-    for key in d.keys():
-        if d[key] == v:
-            yield key
+def tikz_Pool(name, offset="(0,0,0)", to="(0,0,0)", width=1, height=32, depth=32, opacity=0.5, caption=" "):
+    return r"""
+\pic[shift={ """+ offset +""" }] at """+ to +""" 
+    {Box={
+        name="""+name+""",
+        caption="""+ caption +r""",
+        fill=\PoolColor,
+        opacity="""+ str(opacity) +""",
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
 
 
-def self_multiply(tensor_tuple: tuple):
-    tensor_list = list(tensor_tuple)
-    if None in tensor_list:
-        tensor_list.remove(None)
-    if len(tensor_list) == 0:
-        return 0
-    s = tensor_list[0]
-    for i in range(1, len(tensor_list)):
-        s *= tensor_list[i]
-    return s
+
+def tikz_UnPool(name, offset="(0,0,0)", to="(0,0,0)", width=1, height=32, depth=32, opacity=0.5, caption=" "):
+    return r"""
+\pic[shift={ """+ offset +""" }] at """+ to +""" 
+    {Box={
+        name="""+ name +r""",
+        caption="""+ caption +r""",
+        fill=\UnpoolColor,
+        opacity="""+ str(opacity) +""",
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
 
 
-def vertical_image_concat(im1: Image, im2: Image, background_fill: Any = 'white'):
-    dst = Image.new('RGBA', (max(im1.width, im2.width),
-                    im1.height + im2.height), background_fill)
-    dst.paste(im1, (0, 0))
-    dst.paste(im2, (0, im1.height))
-    return dst
+def tikz_ConvRes( name, s_filer=256, n_filer=64, offset="(0,0,0)", to="(0,0,0)", width=6, height=40, depth=40, opacity=0.2, caption=" " ):
+    return r"""
+\pic[shift={ """+ offset +""" }] at """+ to +""" 
+    {RightBandedBox={
+        name="""+ name + """,
+        caption="""+ caption + """,
+        xlabel={{ """+ str(n_filer) + """, }},
+        zlabel="""+ str(s_filer) +r""",
+        fill={rgb:white,1;black,3},
+        bandfill={rgb:white,1;black,2},
+        opacity="""+ str(opacity) +""",
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
+
+def tikz_ConvSoftMax( name, s_filer=40, offset="(0,0,0)", to="(0,0,0)", width=1, height=40, depth=40, caption=" " ):
+    return r"""
+\pic[shift={"""+ offset +"""}] at """+ to +""" 
+    {Box={
+        name=""" + name +""",
+        caption="""+ caption +""",
+        zlabel="""+ str(s_filer) +""",
+        fill=\SoftmaxColor,
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
+
+def tikz_SoftMax( name, s_filer=10, offset="(0,0,0)", to="(0,0,0)", width=1.5, height=3, depth=25, opacity=0.8, caption=" " ):
+    return r"""
+\pic[shift={"""+ offset +"""}] at """+ to +""" 
+    {Box={
+        name=""" + name +""",
+        caption="""+ caption +""",
+        xlabel={{" ","dummy"}},
+        zlabel="""+ str(s_filer) +""",
+        fill=\SoftmaxColor,
+        opacity="""+ str(opacity) +""",
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
+
+def tikz_Sum( name, offset="(0,0,0)", to="(0,0,0)", radius=2.5, opacity=0.6):
+    return r"""
+\pic[shift={"""+ offset +"""}] at """+ to +""" 
+    {Ball={
+        name=""" + name +""",
+        fill=\SumColor,
+        opacity="""+ str(opacity) +""",
+        radius="""+ str(radius) +""",
+        logo=$+$
+        }
+    };
+"""
+
+def tikz_connection( of, to):
+    return r"""
+\draw [connection]  ("""+of+"""-east)    -- node {\midarrow} ("""+to+"""-west);
+"""
 
 
-def linear_layout(images: list, max_width: int = -1, max_height: int = -1, horizontal: bool = True,
-                  padding: int = 0, spacing: int = 0, background_fill: Any = 'white'):
-    coords = []
-    width = 0
-    height = 0
-    x, y = padding, padding
+def tikz_skip( of, to, pos=1.25):
+    return r"""
+\path ("""+ of +"""-southeast) -- ("""+ of +"""-northeast) coordinate[pos="""+ str(pos) +"""] ("""+ of +"""-top) ;
+\path ("""+ to +"""-south)  -- ("""+ to +"""-north)  coordinate[pos="""+ str(pos) +"""] ("""+ to +"""-top) ;
+\draw [copyconnection]  ("""+of+"""-northeast)  
+-- node {\copymidarrow}("""+of+"""-top)
+-- node {\copymidarrow}("""+to+"""-top)
+-- node {\copymidarrow} ("""+to+"""-north);
+"""
 
-    for img in images:
-        if horizontal:
-            if max_width != -1 and x + img.width > max_width:
-                x = padding
-                y = height - padding + spacing
-            coords.append((x, y))
-            width = max(x + img.width + padding, width)
-            height = max(y + img.height + padding, height)
-            x += img.width + spacing
-        else:
-            if max_height != -1 and y + img.height > max_height:
-                x = width - padding + spacing
-                y = padding
-            coords.append((x, y))
-            width = max(x + img.width + padding, width)
-            height = max(y + img.height + padding, height)
-            y += img.height + spacing
+def tikz_Fc( name, s_filer=256, n_filer=64, offset="(0,0,0)", to="(0,0,0)", width=3, height=3, depth=100, caption=" " ):
+    return r"""
+    \pic[shift={"""+ offset +"""}] at """+ to +""" 
+        {RightBandedBox={
+            name=""" + name +""",
+            caption="""+ caption +r""",
+            xlabel={{"""+ str(n_filer) +""", }},
+            zlabel="""+ str(s_filer) +""",
+            fill=\FcColor,
+            bandfill=\FcReluColor,
+            height="""+ str(height) +""",
+            width="""+ str(width) +""",
+            depth="""+ str(depth) +"""
+            }
+        };
+"""
 
-    layout = Image.new('RGBA', (width, height), background_fill)
-    for img, coord in zip(images, coords):
-        layout.paste(img, coord)
-    return layout
+def tikz_Relu(name, offset="(0,0,0)", to="(0,0,0)", width=1, height=32, depth=32, opacity=0.5, caption=" "):
+    return r"""
+\pic[shift={ """+ offset +""" }] at """+ to +""" 
+    {Box={
+        name="""+name+""",
+        caption="""+ caption +r""",
+        fill=\ReluColor,
+        opacity="""+ str(opacity) +""",
+        height="""+ str(height) +""",
+        width="""+ str(width) +""",
+        depth="""+ str(depth) +"""
+        }
+    };
+"""
+
+
+
+def tikz_save(file_name:str,layers:list,lines:list):
+    with open(file_name,'w') as f:
+        f.write(tikz_header())
+        f.write(tikz_colors())
+        f.write(tikz_start())
+        for layer in layers:
+            f.write(layer)
+            f.write('\n')
+        
+        for line in lines:
+            f.write(line)
+            f.write('\n')
+        f.write(tikz_end())
+    f.close()
+    print(f"{file_name} is successfully created!")    
