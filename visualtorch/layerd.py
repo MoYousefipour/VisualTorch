@@ -17,7 +17,7 @@ def layered_view(model: nn.Module,
                  max_z: int = 50,
                  max_xy: int = 50,
                  scale_z: float = 2,
-                 scale_xy: float = 2,
+                 scale_xy: float = 6,
                  type_ignore: list = None,
                  index_ignore: list = None,
                  color_map: dict = None,
@@ -125,6 +125,7 @@ def layered_view(model: nn.Module,
     layers_list = [layer for layer in model.modules() if layer != model]
     
     compiled_list=[]
+    drawline_list=[]
     # Start Building Tikz
     for idx , (layer,shape) in enumerate(zip(layers_list,shapes)):
         if type(layer) in type_ignore or idx in index_ignore:
@@ -136,27 +137,38 @@ def layered_view(model: nn.Module,
         )
         
         layer_type = type(layer)
-        compile_layer=None
+        compile_layer,to=None,None
         if layer_type == nn.Conv2d:
             compile_layer=tikz_Conv(f"conv2d-{idx}",n_filer=shape[1],s_filer=shape[-1],offset=f"({current_z},0,0)",height=y,depth=x,width=z,caption=layer_type.__name__)
+            to = f"conv2d-{idx}"
         elif layer_type == nn.MaxPool2d:
             compile_layer=tikz_Pool(f"maxpool2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+            to= f"maxpool2d-{idx}"
         elif layer_type == nn.Linear:
             compile_layer = tikz_Fc(f"fc-linear-{idx}",n_filer=shape[1],s_filer=shape[-1],offset=f"({current_z},0,0)",depth=x,caption=layer_type.__name__)
+            to= f"fc-linear-{idx}"
         elif layer_type == nn.Softmax:
             compile_layer = tikz_ConvSoftMax(f"softmax-{idx}",s_filer=shape[-1],offset=f"({current_z},0,0)",caption=layer_type.__name__)
+            to= f"softmax-{idx}"
         elif layer_type == nn.AdaptiveAvgPool2d:
             compile_layer=tikz_Pool(f"adaptivepool2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+            to = f"adaptivepool2d-{idx}"
         elif layer_type == nn.BatchNorm2d:
             compile_layer=tikz_Pool(f"batchnorm2d-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+            to = f"batchnorm2d-{idx}"
         elif layer_type == nn.ReLU:
             compile_layer=tikz_Relu(f"relu-{idx}",offset=f"({current_z},0,0)",height=y,depth=x,caption=layer_type.__name__)
+            to = f"relu-{idx}"
         if compile_layer:
+            if len(compiled_list)>0:
+                of=compiled_list[-1].split('name=')[1].split(',')[0]
+                draw=tikz_connection(of,to)
+                drawline_list.append(draw)
             compiled_list.append(compile_layer)
-            current_z += z//4 + spacing
+            current_z += z/8+spacing
         
     if to_file:
-        tikz_save(to_file,compiled_list)
+        tikz_save(to_file,compiled_list,drawline_list)
     # Start bulding image
 
     # for idx, (layer, shape) in enumerate(zip(layers_list, shapes)):
