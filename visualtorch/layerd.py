@@ -84,7 +84,7 @@ def layered_view(model: nn.Module,
     hooks = []
     for layer in model.modules():
         # if isinstance(layer, (nn.Conv2d, nn.Linear, nn.MaxPool2d, nn.ReLU, nn.BatchNorm2d, nn.Flatten)):
-
+        hooks.append(layer.register_forward_hook(hook))
     # Run dummy forward pass to activate hooks and collect shapes
     try:
         # Create a dummy input tensor with batch size 1 matching model input
